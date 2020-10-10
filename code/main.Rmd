@@ -1,0 +1,229 @@
+---
+title: "Proyecto de Estadística"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+## Regresion y ACP
+
+Primero vamos a importar las bibliotecas necesarias, leer la base de datos,
+filtrarla por los equipos de la fase de grupos de la UEFA Champions League,
+cambiarle el nombre a las variables para reducirle el tamaño (para que sea
+más comodo trabajar con ellas) y por último veremos una descripción general
+de los datos utilizando la función `skim` de la biblioteca `skimr`.
+
+```{r}
+library(corrplot)
+library(skimr)
+library(lmtest)
+library(rpart)
+library(nortest)
+
+db <- read.csv(file = 'database.csv')
+
+uefa_teams = c(
+    'AtlÃ©tico Madrid',
+    'Juventus',
+    'Olympiacos CFP',
+    'MalmÃ¶ FF',
+    'Real Madrid',
+    'FC Basel 1893',
+    'Liverpool',
+    'AS Monaco',
+    'Bayer 04 Leverkusen',
+    'Zenit St. Petersburg',
+    'SL Benfica',
+    'Borussia Dortmund',
+    'Arsenal',
+    'RSC Anderlecht',
+    'Galatasaray SK',
+    'FC Bayern MÃ¼nchen',
+    'Manchester City',
+    'Roma',
+    'PFC CSKA Moscow',
+    'FC Barcelona',
+    'Paris Saint-Germain',
+    'Ajax',
+    'Chelsea',
+    'FC Schalke 04',
+    'Sporting CP',
+    'FC Porto',
+    'Shakhtar Donetsk',
+    'Athletic Club de Bilbao'
+)
+
+uefa_db <- data.frame(db[db$club %in% uefa_teams, ])
+
+short_db <- data.frame(
+    uefa_db$overall,
+    uefa_db$potential,
+    uefa_db$attacking_finishing,
+    uefa_db$attacking_short_passing,
+    uefa_db$skill_ball_control,
+    uefa_db$skill_fk_accuracy,
+    uefa_db$skill_long_passing,
+    uefa_db$movement_agility,
+    uefa_db$movement_balance,
+    uefa_db$movement_sprint_speed,
+    uefa_db$power_shot_power,
+    uefa_db$power_stamina,
+    uefa_db$power_long_shots,
+    uefa_db$mentality_interceptions,
+    uefa_db$mentality_vision,
+    uefa_db$defending_marking,
+    uefa_db$defending_sliding_tackle
+)
+
+colnames(short_db) <- c(
+    "overall",
+    "potential",
+    "attacking_finishing",
+    "attacking_short_passing",
+    "skill_ball_control",
+    "skill_fk_accuracy",
+    "skill_long_passing",
+    "movement_agility",
+    "movement_balance",
+    "movement_sprint_speed",
+    "power_shot_power",
+    "power_stamina",
+    "power_long_shots",
+    "mentality_interceptions",
+    "mentality_vision",
+    "defending_marking",
+    "defending_sliding_tackle"
+)
+
+data_sum <- skim(short_db)
+data_sum
+```
+
+Se puede observar que la media de las habilidades de los jugadores es baja
+incluso para los mejores equipos de las mejores ligas de Futbol. Analizando
+los cuartiles podemos percatarnos que el 75% de los jugadores están por debajo
+de 80 puntos (exceptuando el caso del `potential` que alvanza 83) lo cual
+quiere decir que los jugadores considerados tops corresponden solo a un 15%.
+
+### Analisis de correlacion de las variables seleccionadas
+
+```{r}
+cor_short_db <- cor(short_db)
+corrplot(cor_short_db, method = "number", number.digits=1)
+```
+
+Se puede observar una alta correlación entre las variables, por lo que no sería
+correcto aplicar una regresión lineal, por lo tanto aplicaremos una reducción
+de dimensiones para obtener nuevas variables que sean independientes entre si
+y que sean dependientes de una variable respuesta que elijamos.
+
+### Reducción de dimensiones
+
+Seleccionaremos la variable `overall` como variable respuesta. Por lo que la
+sacaremos de las variables que vayamos a aplicarle el ACP.
+
+```{r}
+idx_var_answer <- 1
+acp <- prcomp(short_db[-c(idx_var_answer)], scale. = TRUE)
+plot(acp)
+summary(acp)
+```
+
+Aplicando el criterio de Kaiser, podemos quedarnos con las primeras tres
+variables. Pasaremos a crear una matriz con la variable respuesta junta las
+tres variables nuevas seleccionadas generadas por el ACP y analizar sus
+correlaciones.
+
+```{r}
+reg_data <-
+  as.data.frame(cbind(scale(short_db[c(idx_var_answer)]), acp$x[, 1:3]))
+cor_reg_data <- cor(reg_data)
+corrplot(cor_reg_data, method = "number")
+pairs(reg_data)
+```
+
+Como podemos ver la variable respuesta escogida no tiene dependencia con las
+variables nuevas seleccionadas generadas por el ACP, haciendo una analisis
+similar iterando por todas las variables seleccionandolas como variable
+respuesta en cada paso obtenemos que la variable `mentality_interceptions`
+que tiene una mayor correlación con las tres variables nuevas seleccionadas
+generadas por el ACP como se puede observar a continuación es una mejor
+selección como variable respuesta.
+
+```{r}
+idx_var_answer <- 14
+acp <- prcomp(short_db[-c(idx_var_answer)], scale. = TRUE)
+plot(acp)
+summary(acp)
+reg_data <-
+  as.data.frame(cbind(scale(short_db[c(idx_var_answer)]), acp$x[, 1:3]))
+cor_reg_data <- cor(reg_data)
+corrplot(cor_reg_data, method = "number")
+pairs(reg_data)
+```
+
+### Analisis de las variables nuevas seleccionadas generadas por el ACP
+
+```{r}
+idx <- 3
+acp_abs <- abs(acp$rotation[, idx])
+rel_acp <- acp$rotation[acp_abs >= max(acp_abs) / 2, idx]
+pos_acp <- data.frame(rel_acp[rel_acp >= 0])
+neg_acp <- data.frame(rel_acp[rel_acp < 0])
+pos_acp
+neg_acp
+```
+
+### Regresión lineal multiple
+
+```{r}
+model <- lm("mentality_interceptions ~ .", data = reg_data)
+summary(model)
+```
+
+### Analisis de los supuestos
+
+```{r}
+"Media de los Errores"
+mean(model$residuals)
+
+"Suma de los Errores"
+sum(model$residuals)
+
+dwtest(model)
+
+shapiro.test(model$residuals)
+
+hist(model$residuals)
+
+qqnorm(model$residuals)
+qqline(model$residuals)
+
+plot(reg_data$mentality_interceptions,
+     rstandard(model),
+     ylab = "Residuos estandarizados",
+     xlab = "Val. General")
+abline(h = 0, lty = 2)
+
+bptest(model)
+```
+
+Conclusion, hay independencia, No hay normalidad y hay homocedasticidad
+
+## Anova ##
+
+```{r}
+MI = c(short_db$defending_sliding_tackle)
+Fo = as.numeric(c(uefa_db$preferred_foot == 'Right'))
+data_anova = data.frame(Fo, MI)
+boxplot(MI ~ Fo, data=data_anova)
+anova_model = aov(MI ~ Fo, data = data_anova)
+summary(anova_model)
+hist(anova_model$residuals)
+plot(anova_model)
+shapiro.test(anova_model$residuals)
+bartlett.test(anova_model$residuals, data_anova$Fo)
+dwtest(anova_model)
+```
