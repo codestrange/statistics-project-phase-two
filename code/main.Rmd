@@ -316,7 +316,7 @@ d_tree <- function(data, var, depth) {
   diag.tree <-
     rpart( model, data = data[sub, ], cp = 0.01, maxdepth = depth)
   
-  summary(diag.tree)
+  # summary(diag.tree)
   
   # filename <-
   #   paste("images/d_tree_cluster", "_", var, "_", depth, ".png", sep = "")
@@ -329,8 +329,8 @@ d_tree <- function(data, var, depth) {
        xpd = TRUE)
   # dev.off()
   
-  plotcp(diag.tree)
-  printcp(diag.tree)
+  # plotcp(diag.tree)
+  # printcp(diag.tree)
 
   diag.pred <-
     predict(diag.tree, newdata = data[-sub, ], type = "vector")
