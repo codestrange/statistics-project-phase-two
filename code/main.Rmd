@@ -227,3 +227,133 @@ shapiro.test(anova_model$residuals)
 bartlett.test(anova_model$residuals, data_anova$Fo)
 dwtest(anova_model)
 ```
+
+## Clusters ##
+
+En el siguiente análisis utilizando clústeres se tomó como referencia los
+resultados obtenidos del análisis de las componentes principales, en las
+que según el críterio del porcentaje el resultado era dos componentes
+principales y según el críterio de Kaiser el resultado era tres componentes
+principales.
+
+```{r}
+clusters <- function(data, ks, colors, method = "euclidean") {
+  d <- dist(data, method = method)
+  fit <- hclust(d, method = "complete")
+  
+  # filename <-
+    # paste("images/hier_cluster", "_", k, "_", method, ".png", sep = "")
+  # png(filename = filename)
+  plot(fit)
+  i <- 1
+  while (i <= length(ks)) {
+    rect.hclust(fit, k = ks[i], border = colors[i])
+    i <- i + 1
+  }
+  # dev.off()
+}
+
+data_clusters = as.data.frame(scale(short_db))
+
+clusters(data_clusters, c(2, 3), c("red", "blue"))
+```
+
+Analizando el dendrograma se puede observar que tanto para dos como para tres
+clústeres existe uno de los clústeres que tiene la mayoría de los datos, por
+lo que se analizó aumentar la cantidad de clústeres a 4, 5, 6 y 7 para analizar
+el comportamiento con estas cantidades.
+
+```{r}
+clusters(data_clusters, c(4, 5, 6, 7), c("red", "blue", "yellow", "green"))
+```
+
+Del análisis anterior se eligió 6 clústeres como medidor principal debido a
+que con 4 y 5 clústeres permanecía una diferencia sustancial en cuanto a la
+cantidad de datos en cada clúster, y con 7 clústeres no se observó una mejora
+sobre a elección de 6 clústeres. Tomando en cuenta que se están segmentando
+en grupos a jugadores de futbol según sus características, 6 grupos no es una
+división exagerada, ya que los jugadores se pueden dividir por posiciones en
+el campo, estilo, portero, defensas centrales, laterales, mediocampistas
+defensivos, medio campistas ofencivos y delanteros. No quiere decir que el
+análisis con 6 clústeres determine estos grupos, solamente se quisó ilustrar
+que una clasificación en 6 grupos a los futbolistas no es una división extraña.
+
+## K-Means ##
+
+Se realizó un análisis utilizando el algoritmo de K-medias. Se utilizaron 6
+particiones basándose en el resultado del análisis de los clústeres.
+
+```{r}
+k_means <- function(data, k) {
+  km <- kmeans(data, k)
+  
+  print(km)
+  
+  # filename <- paste("images/kmeans_cluster", "_", k, ".png", sep = "")
+  # png(filename = filename)
+  plot(data, col = km$cluster)
+  # dev.off()
+}
+
+k_means(data_clusters, 6)
+```
+
+Del análisis anterior se obtuvo que el porciento de similitud es del 69%
+aproximadamente, lo cual es bastante bueno para la naturaleza de los datos
+que se analizaron. La cantidad de elementos en cada partición fue de
+94, 168, 207, 98, 122, 139 respectivamente.
+
+## Árboles de Decisión
+
+```{r}
+d_tree <- function(data, var, depth) {
+  n <- length(data[, 1])
+  
+  model <- paste(var, "~ .")
+  
+  sub <- sample(1:n, 2 * n / 3)
+  
+  diag.tree <-
+    rpart( model, data = data[sub, ], cp = 0.01, maxdepth = depth)
+  
+  summary(diag.tree)
+  
+  # filename <-
+  #   paste("images/d_tree_cluster", "_", var, "_", depth, ".png", sep = "")
+  # png(filename = filename)
+  plot(diag.tree)
+  text(diag.tree,
+       use.n = TRUE,
+       all = FALSE,
+       pretty = 1,
+       xpd = TRUE)
+  # dev.off()
+  
+  plotcp(diag.tree)
+  printcp(diag.tree)
+
+  diag.pred <-
+    predict(diag.tree, newdata = data[-sub, ], type = "vector")
+
+  tb <- table(diag.pred, data[-sub, ][[var]])
+
+  error.rpart <- 1 - (sum(diag(tb)) / sum(tb))
+  print(tb)
+  print(error.rpart)
+}
+
+d_tree(short_db, "overall", 3)
+```
+
+En un inicio, debido a que el modelo de regresión lineal no fue útil, ya que
+se incumplieron sus supuestos, se decidió realzar un análisis utilizando
+árboles de decisión, en primer árbol de decisión se realizó utilizando las
+17 variables seleccionadas y como variable respuesta a overall, el resultado
+se puede observar a continuación, pero el error es del 99% por lo que se
+intento con un segundo árbol de decisión utilizando como variable respuesta
+mentality_interceptions y como variables independientes a las componentes
+principales, nuevamente el error fue alto, cercano al 98%.
+
+```{r}
+d_tree(reg_data, "mentality_interceptions", 3)
+```

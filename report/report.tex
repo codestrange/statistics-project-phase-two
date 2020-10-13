@@ -26,6 +26,7 @@
 \usepackage{amssymb}
 \usepackage{jcematcom}
 \usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
 \usepackage{listings}
 \usepackage[pdftex]{hyperref}
 \usepackage{graphicx}
@@ -76,7 +77,7 @@ Lic. Dalia Diaz Sistachs, \emph{Departamento de Matemática Aplicada}}
 \ShortHeadings{Proyecto Fase 2 de Estadística}{Autores}
 %===================================================================================
 
-
+\hyphenation{se-leccio-na-das va-ria-ble res-pues-ta pre-sen-cia in-de-pen-dien-tes Re-si-duos erro-res va-rian-za}
 
 %===================================================================================
 % DOCUMENTO
@@ -424,24 +425,73 @@ El \textbf{tercer supuesto}, que los errores tengan la misma varianza, como se p
 	\caption{Prueba de Bartlett \label{fig:anova_homo}}%
 \end{figure}
 
+\section{Clústeres}\label{sec:clusters}
+
+En el siguiente análisis utilizando clústeres se tomó como referencia los resultados obtenidos del análisis de las componentes principales, en las que según el críterio del porcentaje el resultado era dos componentes principales y según el críterio de Kaiser el resultado era tres componentes principales.
+
+\begin{figure}[htb]%
+	\begin{center}
+		\includegraphics[width=\linewidth]{dendogram_2_3}
+	\end{center}
+	\caption{Dendograma con 2 y 3 clústeres \label{fig:dendogram_2_3}}%
+\end{figure}
+
+Analizando los dendrogramas (Fig. \ref{fig:dendogram_2_3}) se puede observar que tanto para $2$ como para $3$ clústeres existe uno de los clústeres que tiene la mayoría de los datos, por lo que se analizó aumentar la cantidad de clústeres a $4$, $5$, $6$ y $7$ para analizar el comportamiento con estas cantidades.
+
+\begin{figure}[htb]%
+	\begin{center}
+		\includegraphics[width=\linewidth]{dendogram_4_7}
+	\end{center}
+	\caption{Dendograma con 4, 5, 6 y 7 clústeres \label{fig:dendogram_4_7}}%
+\end{figure}
+
+Del análisis del dendograma (Fig. \ref{fig:dendogram_4_7}) se eligió $6$ clústeres como medidor principal debido a que con $4$ y $5$ clústeres permanecía una diferencia sustancial en cuanto a la cantidad de datos en cada clúster, y con $7$ clústeres no se observó una mejora sobre a elección de $6$ clústeres. Tomando en cuenta que se están segmentando en grupos a jugadores de futbol según sus características, $6$ grupos no es una división exagerada, ya que los jugadores se pueden dividir por posiciones en el campo, estilo: portero, defensas centrales, laterales, mediocampistas defensivos, medio campistas ofencivos y delanteros. No quiere decir que el análisis con $6$ clústeres determine estos grupos, solamente se quisó ilustrar que una clasificación en $6$ grupos a los futbolistas no es una división extraña.
+
+\section{K-Medias}\label{sec:kmeans}
+
+Se realizó un análisis utilizando el algoritmo de K-medias. Se utilizaron $6$ particiones basándose en el resultado del análisis de los clústeres.
+
+\begin{figure}[htb]%
+	\begin{center}
+		\includegraphics[width=\linewidth]{kmeans}
+	\end{center}
+	\caption{Resultado de K-medias \label{fig:kmeans}}%
+\end{figure}
+
+Del análisis de los resultado de K-medias (Fig. \ref{fig:kmeans}) se obtuvo que el porciento de similitud es del $69\%$ aproximadamente, lo cual es bastante bueno para la naturaleza de los datos que se analizaron. La cantidad de elementos en cada partición fue de $94$, $168$, $207$, $98$, $122$, $139$ respectivamente.
+
+\section{Árbol de Decisión}\label{sec:dtree}
+
+En un inicio, debido a que el modelo de regresión lineal no fue útil, ya que se incumplieron sus supuestos, se decidió realzar un análisis utilizando árboles de decisión, en primer árbol de decisión se realizó utilizando las $17$ variables seleccionadas y como variable respuesta a $overall$, el resultado se puede observar en la Fig. \ref{fig:dtree}, pero el error es del $99\%$ por lo que se intento con un segundo árbol de decisión utilizando como variable respuesta $mentality\_interceptions$ y como variables independientes a las componentes principales, nuevamente el error fue alto, cercano al $98\%$. (Fig. \ref{fig:dtree2})
+
+\begin{figure}[htb]%
+	\begin{center}
+		\includegraphics[width=\linewidth]{dtree}
+	\end{center}
+	\caption{Árbol de Decisión con $overall$ \label{fig:dtree}}%
+\end{figure}
+
+\begin{figure}[htb]%
+	\begin{center}
+		\includegraphics[width=\linewidth]{dtree2}
+	\end{center}
+	\caption{Árbol de Decisión con $mentality\_interceptions$ \label{fig:dtree2}}%
+\end{figure}
+
 \section{Conclusiones}\label{sec:conc}
 
 Se realizó un análisis sobre los datos obtenidos, aplicando una regresión lineal junto a un análisis de componente principales, además de un análisis de varianza o ANOVA. En ambos casos, los supuestos de los modelos se incumplieron, pero se pudo mostrar la aplicación de las principales técnicas de regresión y análisis de varianzas para un uso posterior en otras circunstancias y/o datos.
 
-%===================================================================================
-% Bibliografía
-%-----------------------------------------------------------------------------------
-\begin{thebibliography}{99}
-%-----------------------------------------------------------------------------------
-	\bibitem{conf5} Conferencia 5 - Corelacion
-	\bibitem{conf6} Conferencia 6 - Regresion Lineal Simple
-	\bibitem{conf7} Conferencia 7 - Regresion Lineal Multiple
-	\bibitem{conf8} Conferencia 8 - ANOVA
-	\bibitem{conf9} Conferencia 9 - ACP
-%-----------------------------------------------------------------------------------
-\end{thebibliography}
+\section{Referencias}\label{sec:ref}
 
-%-----------------------------------------------------------------------------------
+\begin{itemize}
+	\item Conferencia 5 - Correlación
+	\item Conferencia 6 - Regresión Lineal Simple
+	\item Conferencia 7 - Regresión Lineal Múltiple
+	\item Conferencia 8 - ANOVA
+	\item Conferencia 9 - ACP
+	\item Conferencia 10 - Clúster, Árboles de Decisión
+\end{itemize}
 
 \label{end}
 
